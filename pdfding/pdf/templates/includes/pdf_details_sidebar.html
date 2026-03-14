@@ -65,5 +65,14 @@
             <span class="hidden md:block">Comments</span>
         </a>
     </div>
+    <div {% if page == 'docling_result' %} class="bg-slate-200 md:bg-slate-100 dark:bg-slate-800 creme:bg-creme-dark-light" {% endif %}>
+        <a href="{% url 'docling_result' pdf.id %}">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 7H15M9 11H15M9 15H12M4 4V20C4 20.5523 4.44772 21 5 21H19C19.5523 21 20 20.5523 20 20V8L16 4H5C4.44772 4 4 4.44772 4 5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 4V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="hidden md:block">Docling Output</span>
+        </a>
+    </div>
 </div>
 {% endblock %}

@@ -119,10 +119,10 @@
                            Process
                         </a>
                     </div>
-                    <!-- Docling status (inline) -->
+                    <!-- Docling status (inline, self-polling partial) -->
                     <div id="docling-status"
                          hx-get="{% url 'docling_status' pdf.id %}"
-                         hx-trigger="load, every 10s"
+                         hx-trigger="load"
                          hx-swap="innerHTML">
                     </div>
                     <div class="pt-2">

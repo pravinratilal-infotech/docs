@@ -99,3 +99,50 @@ def get_job_status(job_id: str) -> dict | None:
     except Exception as exc:
         logger.error("Error checking Docling job status: %s", exc)
         return None
+
+
+def get_job_result(job_id: str) -> dict | None:
+    """
+    Get the processed result (markdown + JSON) for a completed job.
+
+    Returns:
+        dict with markdown, json_content, num_pages, processing_time, etc.
+        or None if fetch failed.
+    """
+    try:
+        resp = requests.get(
+            f"{DOCLING_API_URL}/api/v1/jobs/{job_id}/result",
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        logger.warning(
+            "Docling API result returned %d for job %s", resp.status_code, job_id
+        )
+        return None
+    except Exception as exc:
+        logger.error("Error fetching Docling result for job %s: %s", job_id, exc)
+        return None
+
+
+def get_job_result(job_id: str) -> dict | None:
+    """
+    Get the full Docling processing result for a completed job.
+
+    Returns dict with: markdown, json_content, num_pages, processing_time,
+    file_size, content_type, filename — or None on error.
+    """
+    try:
+        resp = requests.get(
+            f"{DOCLING_API_URL}/api/v1/jobs/{job_id}/result",
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        logger.warning(
+            "Docling API result returned %d for job %s", resp.status_code, job_id
+        )
+        return None
+    except Exception as exc:
+        logger.error("Error fetching Docling result for job %s: %s", job_id, exc)
+        return None

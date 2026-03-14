@@ -83,6 +83,8 @@ urlpatterns = [
     path('docling/process/<identifier>', docling_views.ProcessWithDocling.as_view(), name='docling_process'),
     path('docling/bulk_process', docling_views.BulkProcessWithDocling.as_view(), name='docling_bulk_process'),
     path('docling/status/<identifier>', docling_views.DoclingStatus.as_view(), name='docling_status'),
+    path('docling/result/<identifier>', docling_views.DoclingResult.as_view(), name='docling_result'),
+    path('docling/result/<identifier>', docling_views.DoclingResult.as_view(), name='docling_result'),
     # tag related views
     path('delete_tag/', pdf_views.DeleteTag.as_view(), name='delete_tag'),
     path('edit_tag/', pdf_views.EditTag.as_view(), name='edit_tag'),

@@ -26,6 +26,7 @@ pypdf = "==6.8.0"
 python-magic = "==0.4.27"
 qrcode = { extras = ["pil"], version = "==8.2" }
 RapidFuzz = "==3.14.3"
+requests = ">=2.31.0"
 supervisor = "==4.3.0"
 whitenoise = { extras = ["brotli"], version = "==6.12.0" }
 

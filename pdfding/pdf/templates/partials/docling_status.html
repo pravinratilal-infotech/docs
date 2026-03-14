@@ -1,22 +1,46 @@
-{# HTMX partial — Docling processing status for a PDF #}
+{# HTMX partial — Docling processing status for a PDF.
+   Loaded inline on pdf_details.html via hx-get with polling.
+   Polling continues only while status is pending/processing. #}
 {% if docling_job %}
-<div class="mt-1 text-sm">
+<div class="mt-1 text-sm"
+     {% if docling_job.status == 'pending' or docling_job.status == 'processing' %}
+     hx-get="{% url 'docling_status' pdf.id %}"
+     hx-trigger="every 5s"
+     hx-swap="outerHTML"
+     {% endif %}>
     {% if docling_job.status == 'completed' %}
-    <span class="text-green-500">✓ Processed</span>
-    <a href="{{ DOCLING_DASHBOARD_URL|default:'/docling' }}/jobs/{{ docling_job.id }}"
-       class="text-primary hover:text-secondary ml-2" target="_blank">
-        View Result →
+    <span class="text-green-500 font-semibold">✓ Processed by Docling</span>
+    {% if docling_job.processing_time %}
+    <span class="text-slate-500 dark:text-slate-400 ml-1">({{ docling_job.processing_time }}s)</span>
+    {% endif %}
+    <a href="{% url 'docling_result' pdf.id %}"
+       class="text-primary hover:text-secondary ml-2 font-semibold">
+        View Output →
     </a>
     {% elif docling_job.status == 'processing' %}
-    <span class="text-blue-400 animate-pulse">⟳ Processing… {{ docling_job.progress }}%</span>
+    <span class="text-blue-400 font-semibold">
+        <span class="inline-block animate-spin mr-1">⟳</span>
+        Processing… {{ docling_job.progress }}%
+    </span>
+    <a href="{{ DOCLING_DASHBOARD_URL }}/jobs/{{ docling_job.id }}"
+       class="text-primary hover:text-secondary ml-2 text-xs" target="_blank">
+        View logs →
+    </a>
     {% elif docling_job.status == 'pending' %}
-    <span class="text-yellow-400">◌ Queued</span>
+    <span class="text-yellow-400 font-semibold">◌ Queued for processing</span>
     {% elif docling_job.status == 'failed' %}
-    <span class="text-red-400">✕ Failed</span>
+    <span class="text-red-400 font-semibold">✕ Processing failed</span>
+    {% if docling_job.error_message %}
+    <span class="text-slate-500 dark:text-slate-400 ml-1 text-xs">— {{ docling_job.error_message|truncatechars:80 }}</span>
+    {% endif %}
+    <a href="{{ DOCLING_DASHBOARD_URL }}/jobs/{{ docling_job.id }}"
+       class="text-primary hover:text-secondary ml-2 text-xs" target="_blank">
+        View details →
+    </a>
     {% endif %}
 </div>
 {% else %}
-<div class="mt-1 text-sm text-slate-500">
+<div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
     Not yet processed
 </div>
 {% endif %}
