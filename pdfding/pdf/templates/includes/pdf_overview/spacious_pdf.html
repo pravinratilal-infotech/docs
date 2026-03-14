@@ -2,7 +2,7 @@
     <div class="flex flex-row pt-1 {% if layout == 'Grid' %} min-h-36 -mb-1! {% endif %}"
          x-data="{ tooltip_date: false }">
         <div id="thumbnail-{{ loop_id }}" class="[&>div]:cursor-pointer"
-             @click="window.open('{% url 'view_pdf' pdf.id %}', '_self');">
+             @click.stop="window.open('{% url 'pdf_details' pdf.id %}', '_self');">
             {% if pdf.thumbnail %}
             <div class="w-26!">
                 <img class="rounded-md border-[1px] border-slate-200 dark:border-slate-600 creme:border-stone-400"
@@ -42,7 +42,7 @@
             </div>
             <div class="flex flex-row items-center gap-x-2">
                 <a id="pdf-link-{{ loop_id }}"
-                   href="{% url 'view_pdf' pdf.id %}"
+                   href="{% url 'pdf_details' pdf.id %}"
                    class="text-xl! font-bold truncate
                           hover:text-slate-900 dark:hover:text-white creme:hover:text-stone-900">
                     {{ pdf.name }}

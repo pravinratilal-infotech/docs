@@ -11,7 +11,8 @@
     {% with loop_id=forloop.counter|add:loop_offset %}
     <div x-data="{ show_actions_{{ loop_id }}: false }"
          id="pdf-{{ loop_id }}"
-         class="h-min relative rounded-md border
+         @click="if (!$event.target.closest('a, button, [role=button], svg, input')) window.location.href='{% url 'pdf_details' pdf.id %}'"
+         class="cursor-pointer h-min relative rounded-md border
                 hover:border-slate-400 dark:hover:border-slate-600 creme:hover:border-stone-400
                 {% if layout == 'Minimal' %}
                   {% if loop_id|add:1|divisibleby:2 %}
