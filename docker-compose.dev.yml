@@ -1,0 +1,73 @@
+# ============================================================
+# Docs — Local Development Docker Compose
+#
+# Self-contained: runs PDFDing + Docling + its own Postgres.
+# No dependency on the notes app or infra repo.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   Open http://localhost:8001
+#   Docling API at http://localhost:5001
+# ============================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pdfding
+      POSTGRES_PASSWORD: pdfding
+      POSTGRES_DB: pdfding
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pdfding"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  pdfding:
+    image: mrmn/pdfding:latest
+    # To build from source (this fork) instead of Docker Hub:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_TYPE: POSTGRES
+      POSTGRES_HOST: db
+      POSTGRES_NAME: pdfding
+      POSTGRES_USER: pdfding
+      POSTGRES_PASSWORD: pdfding
+      POSTGRES_PORT: "5432"
+      SECRET_KEY: dev-secret-key-change-in-production
+      HOST_NAME: "127.0.0.1,localhost"
+      DEFAULT_THEME: dark
+      DEFAULT_THEME_COLOR: green
+      CSRF_COOKIE_SECURE: "FALSE"
+      SESSION_COOKIE_SECURE: "FALSE"
+    volumes:
+      - pdfding_media:/home/nonroot/pdfding/media
+    ports:
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  docling:
+    image: ghcr.io/docling-project/docling-serve:latest
+    restart: unless-stopped
+    environment:
+      # Persist downloaded ML models locally so they survive restarts
+      HF_HOME: /docling-models/huggingface
+      DOCLING_SERVE_ARTIFACTS_PATH: /docling-models/artifacts
+    volumes:
+      - docling_models:/docling-models
+    ports:
+      - "5001:5001"
+
+volumes:
+  pdfding_media:
+  docling_models:

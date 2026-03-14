@@ -20,3 +20,6 @@ pdfding/static/pdfjs
 
 **/htmlcov
 **/.coverage
+
+# Docker dev data
+pg_data/

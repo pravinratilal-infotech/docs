@@ -109,6 +109,21 @@
                            Archive
                            {% endif %}
                         </a>
+                        <svg class="w-5! h-5!" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12.1" cy="12.1" r="1"></circle>
+                        </svg>
+                        <a id="docling-process"
+                           hx-post="{% url 'docling_process' pdf.id %}"
+                           hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                           hx-confirm="Process this PDF with Docling? This may take a few minutes.">
+                           Process
+                        </a>
+                    </div>
+                    <!-- Docling status (inline) -->
+                    <div id="docling-status"
+                         hx-get="{% url 'docling_status' pdf.id %}"
+                         hx-trigger="load, every 10s"
+                         hx-swap="innerHTML">
                     </div>
                     <div class="pt-2">
                         <span class="text-lg font-bold">Collection</span>

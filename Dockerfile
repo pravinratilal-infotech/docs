@@ -56,6 +56,9 @@ COPY --from=npm-build /build/pdfding pdfding
 ARG DEFAULT_THEME=''
 ARG DEFAULT_THEME_COLOR=''
 
+# huey (task queue) eagerly opens its SQLite DB on Django startup;
+# create the directory so collectstatic doesn't crash during the build.
+RUN mkdir -p pdfding/db
 RUN poetry run pdfding/manage.py collectstatic
 
 # remove django md5 hash from filenames of pdfjs as it will mess up the relative imports because of the whitenoise setup

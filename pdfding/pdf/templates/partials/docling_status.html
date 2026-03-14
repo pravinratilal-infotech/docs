@@ -1,0 +1,22 @@
+{# HTMX partial — Docling processing status for a PDF #}
+{% if docling_job %}
+<div class="mt-1 text-sm">
+    {% if docling_job.status == 'completed' %}
+    <span class="text-green-500">✓ Processed</span>
+    <a href="{{ DOCLING_DASHBOARD_URL|default:'/docling' }}/jobs/{{ docling_job.id }}"
+       class="text-primary hover:text-secondary ml-2" target="_blank">
+        View Result →
+    </a>
+    {% elif docling_job.status == 'processing' %}
+    <span class="text-blue-400 animate-pulse">⟳ Processing… {{ docling_job.progress }}%</span>
+    {% elif docling_job.status == 'pending' %}
+    <span class="text-yellow-400">◌ Queued</span>
+    {% elif docling_job.status == 'failed' %}
+    <span class="text-red-400">✕ Failed</span>
+    {% endif %}
+</div>
+{% else %}
+<div class="mt-1 text-sm text-slate-500">
+    Not yet processed
+</div>
+{% endif %}

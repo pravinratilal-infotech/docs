@@ -1,4 +1,5 @@
 import pdf.views.collection_views as collection_views
+import pdf.views.docling_views as docling_views
 import pdf.views.pdf_views as pdf_views
 import pdf.views.share_views as share_views
 import pdf.views.workspace_views as workspace_views
@@ -78,6 +79,10 @@ urlpatterns = [
     path('shared/get_qrcode/<identifier>', share_views.ServeQrCode.as_view(), name='serve_qrcode'),
     path('shared/download_qrcode/<identifier>', share_views.DownloadQrCode.as_view(), name='download_qrcode'),
     path('shared/<identifier>', share_views.ViewShared.as_view(), name='view_shared_pdf'),
+    # docling integration
+    path('docling/process/<identifier>', docling_views.ProcessWithDocling.as_view(), name='docling_process'),
+    path('docling/bulk_process', docling_views.BulkProcessWithDocling.as_view(), name='docling_bulk_process'),
+    path('docling/status/<identifier>', docling_views.DoclingStatus.as_view(), name='docling_status'),
     # tag related views
     path('delete_tag/', pdf_views.DeleteTag.as_view(), name='delete_tag'),
     path('edit_tag/', pdf_views.EditTag.as_view(), name='edit_tag'),

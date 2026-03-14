@@ -1,0 +1,87 @@
+# ============================================================
+# Docs (PDFDing) — Deploy to Server
+#
+# Pulls the latest PDFDing image and restarts the service on
+# the Hetzner server. Part of the FundAI platform.
+#
+# Currently using the pre-built Docker Hub image (mrmn/pdfding).
+# If building from this fork, uncomment the build step and
+# update docker-compose.prod.yml to use `build:` instead.
+#
+# Required GitHub Secrets (Settings → Secrets → Actions):
+#   DEPLOY_SSH_KEY — private SSH key (fundai_ed25519) for server access
+#   SERVER_IP      — Hetzner server IP
+# ============================================================
+
+name: Deploy to Server
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pdfding/**'
+      - 'bootstrap.sh'
+      - 'supervisord.conf'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-server.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Sync docs source to server
+        run: |
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.venv' \
+            --exclude='pg_data' \
+            --exclude='pdfding/db' \
+            --exclude='pdfding/media' \
+            --exclude='pdfding/staticfiles' \
+            -e "$SSH_CMD" \
+            ./ root@${{ secrets.SERVER_IP }}:/opt/fundai/docs/
+
+      - name: Pull latest image and restart PDFDing
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            root@${{ secrets.SERVER_IP }} bash -s << 'REMOTE'
+          set -euo pipefail
+          cd /opt/fundai
+          # Pull latest image (using Docker Hub image)
+          docker compose -f compose/docker-compose.prod.yml --env-file .env pull pdfding
+          # Restart only the pdfding service
+          docker compose -f compose/docker-compose.prod.yml --env-file .env up -d pdfding
+          echo "✅ PDFDing deploy complete"
+          REMOTE
+
+      - name: Health check
+        run: |
+          # PDFDing runs behind Caddy on the docs subdomain
+          DOCS_DOMAIN="docs.$(echo '${{ secrets.SERVER_IP }}' | tr '.' '-').sslip.io"
+          for i in $(seq 1 15); do
+            STATUS=$(curl -sk -o /dev/null -w "%{http_code}" "https://${DOCS_DOMAIN}/" 2>/dev/null || echo "000")
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+              echo "✅ Health check passed (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Waiting... ($i/15, status=$STATUS)"
+            sleep 10
+          done
+          echo "❌ Health check failed"
+          exit 1

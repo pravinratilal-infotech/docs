@@ -204,6 +204,12 @@ HUEY = {
 
 CONSUME_DIR = DATA_DIR / 'consume'
 
+# ── Docling API integration ──────────────────────────────────────────────────
+# Internal Docker network URL for the docling-api service
+DOCLING_API_URL = environ.get('DOCLING_API_URL', 'http://docling-api:8001')
+# External URL for the Docling dashboard (used for user-facing redirects)
+DOCLING_DASHBOARD_URL = environ.get('DOCLING_DASHBOARD_URL', '/docling')
+
 log_level = environ.get('LOG_LEVEL', 'ERROR')
 
 LOGGING = {
