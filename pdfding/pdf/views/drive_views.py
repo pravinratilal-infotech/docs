@@ -21,13 +21,19 @@ class DriveOverview(View):
         error = None
         imported_pdfs: dict[str, str] = {}
 
+        root_folders: list = []
+        root_pdfs: list = []
+
         try:
             tree, folder_count, file_count = drive_services.list_shared_tree()
             imported_pdfs = drive_import_services.get_imported_gdrive_map(
                 request.user.profile.current_workspace
             )
+            workspace = request.user.profile.current_workspace
             drive_import_services.annotate_imported_pdfs(tree, imported_pdfs)
             drive_import_services.annotate_processing_status(tree)
+            drive_import_services.attach_imported_pdf_objects(tree, workspace)
+            root_folders, root_pdfs = drive_import_services.split_tree_roots(tree)
         except DriveConnectionError as exc:
             error = str(exc)
             messages.error(request, error)
@@ -37,11 +43,14 @@ class DriveOverview(View):
             "drive_overview.html",
             {
                 "tree": tree,
+                "root_folders": root_folders,
+                "root_pdfs": root_pdfs,
                 "folder_count": folder_count,
                 "file_count": file_count,
                 "scoped_folder_id": scoped_folder_id,
                 "imported_pdfs": imported_pdfs,
                 "error": error,
+                "layout": request.user.profile.layout,
                 "page": "gdrive_overview",
             },
         )

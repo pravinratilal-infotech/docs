@@ -1,13 +1,17 @@
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-    {% for node in nodes %}
-        {% if not node.is_folder and node.mime_type == 'application/pdf' %}
-        {% include "partials/drive_file_card.html" with node=node folder_path="" %}
-        {% endif %}
+{% if root_pdfs %}
+<div {% if layout == 'Grid' %}
+     class="grid grid-cols-1 min-[1200px]:grid-cols-2 min-[1600px]:grid-cols-3 gap-5 mb-6"
+     {% elif layout == 'Minimal' %}
+     class="grid grid-cols-1 mb-6"
+     {% else %}
+     class="grid grid-cols-1 gap-y-5 mb-6"
+     {% endif %}>
+    {% for node in root_pdfs %}
+    {% include "partials/drive_item.html" with node=node loop_id=forloop.counter folder_path="" %}
     {% endfor %}
 </div>
+{% endif %}
 
-{% for node in nodes %}
-    {% if node.is_folder %}
-    {% include "partials/drive_folder_section.html" with folder=node folder_path="" %}
-    {% endif %}
+{% for folder in root_folders %}
+{% include "partials/drive_folder_section.html" with folder=folder folder_path="" depth=0 %}
 {% endfor %}

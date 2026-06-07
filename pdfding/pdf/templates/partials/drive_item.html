@@ -1,0 +1,45 @@
+{% if node.pdf %}
+<div x-data="{ show_actions_{{ loop_id }}: false }"
+     id="gdrive-pdf-{{ loop_id }}"
+     @click="if (!$event.target.closest('a, button, [role=button], svg, input')) window.location.href='{% url 'pdf_details' node.pdf.id %}';"
+     class="cursor-pointer h-min relative rounded-md border
+            hover:border-slate-400 dark:hover:border-slate-600 creme:hover:border-stone-400
+            {% if layout == 'Minimal' %}
+              {% if loop_id|divisibleby:2 %}
+            bg-slate-200/70 dark:bg-slate-800 creme:bg-creme-dark-light
+            border-slate-200/70 dark:border-slate-800 creme:border-creme-dark-light
+              {% else %}
+            border-slate-50 dark:border-slate-900 creme:border-creme
+              {% endif %}
+            {% else %}
+            bg-slate-100 border-slate-300
+            dark:bg-slate-800 dark:border-slate-700
+            creme:bg-creme-dark-light creme:border-creme-dark
+            {% endif %}">
+    <div class="px-3 py-1">
+        {% if layout == 'Compact' %}
+        {% include 'includes/pdf_overview/compact_pdf.html' with pdf=node.pdf %}
+        {% elif layout == 'Minimal' %}
+        {% include 'includes/pdf_overview/minimal_pdf.html' with pdf=node.pdf %}
+        {% else %}
+        {% include 'includes/pdf_overview/spacious_pdf.html' with pdf=node.pdf %}
+        {% endif %}
+    </div>
+    {% include 'includes/pdf_overview/pdf_actions_menu.html' with pdf=node.pdf %}
+    {% if request.user.profile.show_progress_bars == 'Enabled' and node.pdf.number_of_pages > 0 and layout != 'Minimal' %}
+    <div class="hover:cursor-pointer" x-data="{ tooltip_progress: false }" id="progressbar-{{ loop_id }}">
+        <div x-on:mouseenter="tooltip_progress = true" x-on:mouseleave="tooltip_progress = false"
+             class="w-full h-1 rounded-sm">
+            <div style="width: {{ node.pdf.progress }}%;" class="h-1 bg-primary! rounded-sm"></div>
+        </div>
+        <span x-show="tooltip_progress" x-transition:enter.duration.500ms x-cloak
+              class="z-50 absolute bg-primary text-gray-100 text-sm rounded-xs p-2 mt-1">
+            {{ node.pdf.progress }}% - Page {{ node.pdf.current_page_for_progress }} of {{ node.pdf.number_of_pages }}
+        </span>
+    </div>
+    {% endif %}
+    {% include 'partials/drive_item_footer.html' %}
+</div>
+{% else %}
+{% include 'partials/drive_pending_item.html' %}
+{% endif %}

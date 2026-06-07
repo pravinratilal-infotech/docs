@@ -51,7 +51,20 @@ class DriveTreeNode:
     imported_pdf_id: str | None = None
     docling_status: str | None = None
     enrichment_status: str | None = None
+    pdf: object | None = None
     children: list[DriveTreeNode] = field(default_factory=list)
+
+    @property
+    def pdf_children(self) -> list[DriveTreeNode]:
+        return [
+            child
+            for child in self.children
+            if not child.is_folder and child.mime_type == PDF_MIME
+        ]
+
+    @property
+    def subfolders(self) -> list[DriveTreeNode]:
+        return [child for child in self.children if child.is_folder]
 
 
 class GoogleDriveConnector:
@@ -166,14 +179,19 @@ class GoogleDriveConnector:
 
         forest: list[DriveTreeNode] = []
         seen_roots: set[str] = set()
+        included_folder_ids: set[str] = set()
 
-        for root in self._collect_shared_roots():
+        for root in sorted(self._collect_shared_roots(), key=lambda item: item.name.lower()):
             if root.id in seen_roots:
                 continue
             seen_roots.add(root.id)
 
             if root.mime_type == FOLDER_MIME:
-                forest.append(self._build_subtree(root.id, root.name, set()))
+                if root.id in included_folder_ids:
+                    continue
+                subtree = self._build_subtree(root.id, root.name, set())
+                forest.append(subtree)
+                included_folder_ids |= self._collect_folder_ids(subtree)
             else:
                 forest.append(
                     DriveTreeNode(
@@ -190,6 +208,13 @@ class GoogleDriveConnector:
 
         forest.sort(key=lambda node: (not node.is_folder, node.name.lower()))
         return forest
+
+    @staticmethod
+    def _collect_folder_ids(node: DriveTreeNode) -> set[str]:
+        ids = {node.id} if node.is_folder else set()
+        for child in node.children:
+            ids |= GoogleDriveConnector._collect_folder_ids(child)
+        return ids
 
     def _collect_shared_roots(self) -> list[DriveFileInfo]:
         """Top-level folders/files shared with the service account."""

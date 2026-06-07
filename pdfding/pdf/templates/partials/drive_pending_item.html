@@ -1,0 +1,61 @@
+<div class="h-min relative rounded-md border
+            bg-slate-100 border-slate-300
+            dark:bg-slate-800 dark:border-slate-700
+            creme:bg-creme-dark-light creme:border-creme-dark
+            hover:border-slate-400 dark:hover:border-slate-600 creme:hover:border-stone-400">
+    <div class="px-3 py-1">
+        <div class="-ml-1!">
+            <div class="flex flex-row pt-1 {% if layout == 'Grid' %} min-h-36 -mb-1! {% endif %}">
+                <div class="shrink-0">
+                    <div class="w-26! rounded-md border border-slate-200 dark:border-slate-600 creme:border-stone-400 overflow-hidden
+                                bg-slate-200 dark:bg-slate-700 creme:bg-stone-300">
+                        <img src="{% url 'gdrive_thumbnail' node.id %}"
+                             alt="{{ node.name }}"
+                             class="w-full aspect-[3/4] object-cover object-top"
+                             loading="lazy"
+                             onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
+                        <div class="hidden aspect-[3/4] flex items-center justify-center text-slate-400">
+                            <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 7H15M9 11H15M9 15H12M4 4V20C4 20.5523 4.44772 21 5 21H19C19.5523 21 20 20.5523 20 20V8L16 4H5C4.44772 4 4 4.44772 4 5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M16 4V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="truncate w-full flex flex-col pl-3 md:pl-5 text-sm text-slate-700 dark:text-slate-200 creme:text-stone-700">
+                    <div class="text-slate-400 dark:text-slate-500 creme:text-stone-500 text-xs mb-1">
+                        Google Drive
+                        {% if node.modified_at %} · {{ node.modified_at|date:"M j, Y" }}{% endif %}
+                        {% if node.size %} · {{ node.size|filesizeformat }}{% endif %}
+                    </div>
+                    <div class="text-xl! font-bold truncate text-slate-800 dark:text-slate-100 creme:text-stone-800"
+                         title="{{ node.name }}">
+                        {{ node.name }}
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 pt-2">
+                        Not in your library yet. Import to run Docling OCR and AI tagging.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="px-3 pb-3 flex flex-wrap gap-2" @click.stop>
+        <button type="button"
+                class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer
+                       bg-primary text-white hover:bg-secondary transition-colors"
+                hx-post="{% url 'gdrive_import_file' node.id %}"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                hx-vals='{"folder_path": "{{ folder_path|default:""|escapejs }}"}'
+                hx-confirm="Import &quot;{{ node.name }}&quot; from Google Drive? Docling and AI tagging will run automatically."
+                hx-swap="none">
+            Import &amp; Process
+        </button>
+        {% if node.web_view_link %}
+        <a href="{{ node.web_view_link }}" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md
+                  text-slate-500 hover:text-primary transition-colors">
+            Drive ↗
+        </a>
+        {% endif %}
+    </div>
+</div>

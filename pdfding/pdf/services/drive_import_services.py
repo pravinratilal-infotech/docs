@@ -74,6 +74,34 @@ def annotate_processing_status(nodes) -> None:
         node.enrichment_status = enrichment.get("status") if enrichment else None
 
 
+def split_tree_roots(nodes: list[DriveTreeNode]) -> tuple[list[DriveTreeNode], list[DriveTreeNode]]:
+    """Split top-level Drive nodes into folders and loose PDF files."""
+    folders = [node for node in nodes if node.is_folder]
+    pdfs = [node for node in nodes if not node.is_folder and node.mime_type == PDF_MIME]
+    return folders, pdfs
+
+
+def attach_imported_pdf_objects(nodes, workspace) -> None:
+    """Attach Pdf model instances for imported Drive files (for overview partials)."""
+    pdf_ids = [
+        node.imported_pdf_id for node in _walk_tree(nodes) if node.imported_pdf_id
+    ]
+    if not pdf_ids:
+        return
+
+    pdfs = (
+        Pdf.objects.filter(
+            id__in=pdf_ids,
+            collection__workspace=workspace,
+        )
+        .prefetch_related("tags")
+    )
+    by_id = {str(pdf.id): pdf for pdf in pdfs}
+    for node in _walk_tree(nodes):
+        if node.imported_pdf_id:
+            node.pdf = by_id.get(node.imported_pdf_id)
+
+
 def get_imported_gdrive_map(workspace) -> dict[str, str]:
     """Map GDrive file IDs to PdfDing PDF UUIDs for a workspace."""
     return {

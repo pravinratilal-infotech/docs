@@ -1,14 +1,29 @@
-<section class="mb-8 last:mb-0">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-2
-                border-b border-slate-300 dark:border-slate-600 creme:border-stone-400">
+<section class="{% if depth %}mt-2{% else %}mb-2{% endif %}">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3
+                {% if depth == 0 %}pb-3 border-b{% else %}pb-2{% endif %}
+                border-slate-300 dark:border-slate-600 creme:border-stone-400">
         <div class="flex items-center gap-2 min-w-0">
-            <svg class="w-5 h-5 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="{% if depth %}w-4 h-4{% else %}w-5 h-5{% endif %} shrink-0 text-primary"
+                 viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 7C3 6.44772 3.44772 6 4 6H9.58579C9.851 6 10.1054 6.10536 10.2929 6.29289L12.7071 8.70711C12.8946 8.89464 13.149 9 13.4142 9H20C20.5523 9 21 9.44772 21 10V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
+            {% if depth %}
+            <h3 class="text-base font-semibold truncate text-slate-700 dark:text-slate-200 creme:text-stone-700"
+                title="{{ folder.name }}">
+                {{ folder.name }}
+            </h3>
+            {% else %}
             <h2 class="text-lg font-bold truncate text-slate-800 dark:text-slate-100 creme:text-stone-800"
                 title="{{ folder.name }}">
                 {{ folder.name }}
             </h2>
+            {% endif %}
+            {% if folder_path %}
+            <span class="hidden sm:inline text-xs text-slate-500 dark:text-slate-400 truncate"
+                  title="{{ folder_path }}/{{ folder.name }}">
+                {{ folder_path }}/{{ folder.name }}
+            </span>
+            {% endif %}
         </div>
         <button type="button"
                 class="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer
@@ -21,21 +36,33 @@
         </button>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-        {% for child in folder.children %}
-            {% if not child.is_folder and child.mime_type == 'application/pdf' %}
-            {% include "partials/drive_file_card.html" with node=child folder_path=folder_path %}
+    {% if folder.pdf_children %}
+    <div {% if layout == 'Grid' %}
+         class="grid grid-cols-1 min-[1200px]:grid-cols-2 min-[1600px]:grid-cols-3 gap-5 mb-4"
+         {% elif layout == 'Minimal' %}
+         class="grid grid-cols-1 mb-4"
+         {% else %}
+         class="grid grid-cols-1 gap-y-5 mb-4"
+         {% endif %}>
+        {% for child in folder.pdf_children %}
+            {% if folder_path %}
+            {% include "partials/drive_item.html" with node=child loop_id=forloop.counter folder_path=folder_path|add:"/"|add:folder.name %}
+            {% else %}
+            {% include "partials/drive_item.html" with node=child loop_id=forloop.counter folder_path=folder.name %}
             {% endif %}
         {% endfor %}
     </div>
+    {% endif %}
 
-    {% for child in folder.children %}
-        {% if child.is_folder %}
+    {% if folder.subfolders %}
+    <div class="ml-3 md:ml-6 pl-4 md:pl-6 border-l-2 border-slate-300/80 dark:border-slate-600/80 creme:border-stone-400/80 space-y-4">
+        {% for child in folder.subfolders %}
             {% if folder_path %}
-            {% include "partials/drive_folder_section.html" with folder=child folder_path=folder_path|add:"/"|add:folder.name %}
+            {% include "partials/drive_folder_section.html" with folder=child folder_path=folder_path|add:"/"|add:folder.name depth=depth|default:0|add:1 %}
             {% else %}
-            {% include "partials/drive_folder_section.html" with folder=child folder_path=folder.name %}
+            {% include "partials/drive_folder_section.html" with folder=child folder_path=folder.name depth=depth|default:0|add:1 %}
             {% endif %}
-        {% endif %}
-    {% endfor %}
+        {% endfor %}
+    </div>
+    {% endif %}
 </section>

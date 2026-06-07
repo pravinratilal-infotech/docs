@@ -1,0 +1,21 @@
+<div class="px-3 pb-2 flex flex-wrap items-center gap-2 text-xs
+            border-t border-slate-200 dark:border-slate-700 creme:border-creme-dark mt-1 pt-2"
+     @click.stop>
+    {% if node.docling_status == 'completed' and node.enrichment_status == 'completed' %}
+    <span class="px-2 py-0.5 font-semibold rounded-full bg-green-500/15 text-green-500">Ready</span>
+    {% elif node.docling_status == 'failed' or node.enrichment_status == 'failed' %}
+    <span class="px-2 py-0.5 font-semibold rounded-full bg-red-500/15 text-red-400">Failed</span>
+    {% elif node.docling_status == 'processing' or node.enrichment_status == 'processing' %}
+    <span class="px-2 py-0.5 font-semibold rounded-full bg-blue-500/15 text-blue-400">Processing</span>
+    {% elif node.docling_status == 'pending' or node.enrichment_status == 'pending' %}
+    <span class="px-2 py-0.5 font-semibold rounded-full bg-yellow-500/15 text-yellow-400">Queued</span>
+    {% endif %}
+    {% if node.docling_status == 'completed' and node.imported_pdf_id %}
+    <a href="{% url 'docling_result' node.imported_pdf_id %}"
+       class="font-semibold text-primary hover:text-secondary">Output →</a>
+    {% endif %}
+    {% if node.web_view_link %}
+    <a href="{{ node.web_view_link }}" target="_blank" rel="noopener noreferrer"
+       class="font-semibold text-slate-500 hover:text-primary">Drive ↗</a>
+    {% endif %}
+</div>
