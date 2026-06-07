@@ -63,6 +63,33 @@ jobs:
             -e "$SSH_CMD" \
             ./ root@${{ secrets.SERVER_IP }}:/opt/fundai/docs/
 
+      - name: Ensure Google Drive service account key is mounted
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            root@${{ secrets.SERVER_IP }} bash -s << 'REMOTE'
+          set -euo pipefail
+          SECRETS_DIR=/opt/fundai/compose/secrets
+          KEY_NAME=google-drive-service-account.json
+          DEST="$SECRETS_DIR/$KEY_NAME"
+          mkdir -p "$SECRETS_DIR"
+          if [ ! -f "$DEST" ]; then
+            for src in \
+              /opt/fundai/docs/secrets/$KEY_NAME \
+              /opt/fundai/docs/dev/secrets/$KEY_NAME; do
+              if [ -f "$src" ]; then
+                cp "$src" "$DEST"
+                chown 1000:1000 "$DEST"
+                chmod 640 "$DEST"
+                echo "Installed GDrive key from $src"
+                break
+              fi
+            done
+          fi
+          if [ ! -f "$DEST" ]; then
+            echo "WARNING: GDrive key not found at $DEST (tab will show an error until key is installed)"
+          fi
+          REMOTE
+
       - name: Build and restart PDFDing on server
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
