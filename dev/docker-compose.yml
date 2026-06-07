@@ -1,0 +1,168 @@
+# ============================================================
+# FundAI Docs — dev environment
+#
+# App stack:  ./dev/tools.sh up
+# Toolbox:    ./dev/tools.sh shell
+# Install:    ./dev/tools.sh install
+# Tests:      ./dev/tools.sh test
+# Drive test: ./dev/tools.sh drive-test
+# ============================================================
+
+services:
+
+  # ── App stack (PdfDing + Postgres + Docling) ─────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pdfding
+      POSTGRES_PASSWORD: pdfding
+      POSTGRES_DB: pdfding
+    volumes:
+      - ../pg_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pdfding"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  pdfding:
+    profiles: [app]
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_TYPE: POSTGRES
+      POSTGRES_HOST: db
+      POSTGRES_NAME: pdfding
+      POSTGRES_USER: pdfding
+      POSTGRES_PASSWORD: pdfding
+      POSTGRES_PORT: "5432"
+      SECRET_KEY: dev-secret-key-change-in-production
+      HOST_NAME: "127.0.0.1,localhost"
+      DEFAULT_THEME: dark
+      DEFAULT_THEME_COLOR: green
+      CSRF_COOKIE_SECURE: "FALSE"
+      SESSION_COOKIE_SECURE: "FALSE"
+      GOOGLE_DRIVE_ENABLED: ${GOOGLE_DRIVE_ENABLED:-TRUE}
+      GOOGLE_DRIVE_KEY_FILE: /home/nonroot/secrets/google-drive-service-account.json
+      GOOGLE_DRIVE_FOLDER_ID: ${GOOGLE_DRIVE_FOLDER_ID:-}
+    volumes:
+      - pdfding_media:/home/nonroot/pdfding/media
+      - ./secrets:/home/nonroot/secrets:ro
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  docling:
+    profiles: [app]
+    image: ghcr.io/docling-project/docling-serve:latest
+    restart: unless-stopped
+    environment:
+      HF_HOME: /docling-models/huggingface
+      DOCLING_SERVE_ARTIFACTS_PATH: /docling-models/artifacts
+    volumes:
+      - docling_models:/docling-models
+    ports:
+      - "5001:5001"
+
+  # ── Dev toolbox (install / test / shell) ───────────────────────
+  toolbox:
+    profiles: [tools]
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile
+    image: fundai-docs-dev:latest
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+      - ./secrets:/secrets:ro
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings
+      GOOGLE_DRIVE_KEY_FILE: /secrets/google-drive-service-account.json
+      DATABASE_TYPE: POSTGRES
+      POSTGRES_HOST: db
+      POSTGRES_NAME: pdfding
+      POSTGRES_USER: pdfding
+      POSTGRES_PASSWORD: pdfding
+      POSTGRES_PORT: "5432"
+      GOOGLE_DRIVE_ENABLED: ${GOOGLE_DRIVE_ENABLED:-TRUE}
+      GOOGLE_DRIVE_FOLDER_ID: ${GOOGLE_DRIVE_FOLDER_ID:-}
+    stdin_open: true
+    tty: true
+
+  drive-test:
+    profiles: [tools]
+    image: fundai-docs-dev:latest
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile
+    working_dir: /workspace
+    entrypoint: ["python", "dev/scripts/drive_test.py"]
+    volumes:
+      - ..:/workspace
+      - ./secrets:/secrets:ro
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings
+      GOOGLE_DRIVE_KEY_FILE: /secrets/google-drive-service-account.json
+      GOOGLE_DRIVE_FOLDER_ID: ${GOOGLE_DRIVE_FOLDER_ID:-}
+
+  test:
+    profiles: [tools]
+    image: fundai-docs-dev:latest
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile
+    working_dir: /workspace
+    command: ["pytest", "pdfding/", "--ignore=pdfding/e2e", "-q", "--tb=short"]
+    volumes:
+      - ..:/workspace
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PYTHONPATH: /workspace
+      DJANGO_SETTINGS_MODULE: pdfding.core.settings
+
+  migrate:
+    profiles: [tools]
+    image: fundai-docs-dev:latest
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile
+    working_dir: /workspace/pdfding
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    volumes:
+      - ..:/workspace
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings
+      DATABASE_TYPE: POSTGRES
+      POSTGRES_HOST: db
+      POSTGRES_NAME: pdfding
+      POSTGRES_USER: pdfding
+      POSTGRES_PASSWORD: pdfding
+      POSTGRES_PORT: "5432"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pdfding_media:
+  docling_models:

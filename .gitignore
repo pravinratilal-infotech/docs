@@ -23,3 +23,13 @@ pdfding/static/pdfjs
 
 # Docker dev data
 pg_data/
+
+# Google Drive service account keys (never commit)
+**/service-account*.json
+**/*-service-account.json
+secrets/*
+!secrets/.gitkeep
+dev/secrets/*
+!dev/secrets/.gitkeep
+dev/.env
+.env.tools

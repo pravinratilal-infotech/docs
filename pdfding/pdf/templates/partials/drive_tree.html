@@ -1,0 +1,25 @@
+<ul class="{{ list_class|default:'' }}">
+    {% for node in nodes %}
+    <li class="py-1">
+        <div class="flex items-center gap-2 truncate font-medium {% if not node.is_folder %}font-normal text-slate-700 dark:text-slate-300 creme:text-stone-700{% endif %}"
+             title="{{ node.name }}">
+            {% if node.is_folder %}
+            <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 7C3 6.44772 3.44772 6 4 6H9.58579C9.851 6 10.1054 6.10536 10.2929 6.29289L12.7071 8.70711C12.8946 8.89464 13.149 9 13.4142 9H20C20.5523 9 21 9.44772 21 10V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {% else %}
+            <svg class="w-4 h-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 7H15M9 11H15M9 15H12M4 4V20C4 20.5523 4.44772 21 5 21H19C19.5523 21 20 20.5523 20 20V8L16 4H5C4.44772 4 4 4.44772 4 5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 4V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {% endif %}
+            <span class="truncate">{{ node.name }}</span>
+        </div>
+        {% if node.children %}
+        <div class="ml-5 mt-1 border-l border-slate-300 dark:border-slate-600 creme:border-stone-400 pl-3">
+            {% include "partials/drive_tree.html" with nodes=node.children list_class="" %}
+        </div>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>

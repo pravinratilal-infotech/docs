@@ -1,28 +1,33 @@
 # ============================================================
 # Docs (PDFDing) — Deploy to Server
 #
-# Pulls the latest PDFDing image and restarts the service on
-# the Hetzner server. Part of the FundAI platform.
+# Deploys the PdfDing fork to the Hetzner server via SSH + rsync.
+# Part of the FundAI platform — deployed to /opt/fundai/docs/.
 #
-# Currently using the pre-built Docker Hub image (mrmn/pdfding).
-# If building from this fork, uncomment the build step and
-# update docker-compose.prod.yml to use `build:` instead.
+# Builds the pdfding image from this repo's Dockerfile (see
+# infra/compose/docker-compose.prod.yml), then restarts the service.
+# Migrations run automatically via bootstrap.sh on container start.
 #
 # Required GitHub Secrets (Settings → Secrets → Actions):
 #   DEPLOY_SSH_KEY — private SSH key (fundai_ed25519) for server access
-#   SERVER_IP      — Hetzner server IP
+#   SERVER_IP      — Hetzner server IP (e.g. 46.224.188.96)
 # ============================================================
 
 name: Deploy to Server
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'pdfding/**'
       - 'bootstrap.sh'
       - 'supervisord.conf'
       - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.dockerignore'
       - '.github/workflows/deploy-server.yml'
   workflow_dispatch:
 
@@ -51,28 +56,26 @@ jobs:
             --exclude='*.pyc' \
             --exclude='.venv' \
             --exclude='pg_data' \
+            --exclude='dev' \
             --exclude='pdfding/db' \
             --exclude='pdfding/media' \
             --exclude='pdfding/staticfiles' \
             -e "$SSH_CMD" \
             ./ root@${{ secrets.SERVER_IP }}:/opt/fundai/docs/
 
-      - name: Pull latest image and restart PDFDing
+      - name: Build and restart PDFDing on server
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             root@${{ secrets.SERVER_IP }} bash -s << 'REMOTE'
           set -euo pipefail
           cd /opt/fundai
-          # Pull latest image (using Docker Hub image)
-          docker compose -f compose/docker-compose.prod.yml --env-file .env pull pdfding
-          # Restart only the pdfding service
+          docker compose -f compose/docker-compose.prod.yml --env-file .env build pdfding
           docker compose -f compose/docker-compose.prod.yml --env-file .env up -d pdfding
           echo "✅ PDFDing deploy complete"
           REMOTE
 
       - name: Health check
         run: |
-          # PDFDing runs behind Caddy on the docs subdomain
           DOCS_DOMAIN="docs.$(echo '${{ secrets.SERVER_IP }}' | tr '.' '-').sslip.io"
           for i in $(seq 1 15); do
             STATUS=$(curl -sk -o /dev/null -w "%{http_code}" "https://${DOCS_DOMAIN}/" 2>/dev/null || echo "000")
