@@ -16,11 +16,7 @@
                 {% endif %}
             </p>
 
-            {% if not drive_enabled %}
-            <p class="pt-4 text-lg text-slate-600 dark:text-slate-300">
-                Google Drive is not enabled on this server.
-            </p>
-            {% elif error %}
+            {% if error %}
             <p class="pt-4 text-lg text-slate-600 dark:text-slate-300">
                 Could not load files from Google Drive.
             </p>

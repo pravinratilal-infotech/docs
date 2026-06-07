@@ -211,8 +211,10 @@ DOCLING_API_URL = environ.get('DOCLING_API_URL', 'http://docling-api:8001')
 DOCLING_DASHBOARD_URL = environ.get('DOCLING_DASHBOARD_URL', '/docling')
 
 # ── Google Drive (service account → shared folders) ────────────────────────
-GOOGLE_DRIVE_ENABLED = environ.get('GOOGLE_DRIVE_ENABLED', 'FALSE') in ['TRUE', 'True']
-GOOGLE_DRIVE_KEY_FILE = environ.get('GOOGLE_DRIVE_KEY_FILE', '')
+GOOGLE_DRIVE_KEY_FILE = environ.get(
+    'GOOGLE_DRIVE_KEY_FILE',
+    '/home/nonroot/secrets/google-drive-service-account.json',
+)
 # Optional: scope the GDrive view to one folder subtree instead of all shares.
 GOOGLE_DRIVE_FOLDER_ID = environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
 

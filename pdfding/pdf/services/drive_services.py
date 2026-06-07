@@ -14,10 +14,6 @@ from pdf.drive.google_drive_connector import (
 )
 
 
-def is_drive_enabled() -> bool:
-    return bool(getattr(settings, "GOOGLE_DRIVE_ENABLED", False))
-
-
 def get_key_file() -> Path:
     key_file = Path(getattr(settings, "GOOGLE_DRIVE_KEY_FILE", "") or "")
     if not key_file.is_file():

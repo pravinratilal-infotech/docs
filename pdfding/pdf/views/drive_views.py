@@ -16,25 +16,8 @@ class DriveOverview(View):
         tree = []
         folder_count = 0
         file_count = 0
-        scoped_folder_id = None
-        error = None
-
-        if not drive_services.is_drive_enabled():
-            return render(
-                request,
-                "drive_overview.html",
-                {
-                    "drive_enabled": False,
-                    "tree": tree,
-                    "folder_count": folder_count,
-                    "file_count": file_count,
-                    "scoped_folder_id": scoped_folder_id,
-                    "error": error,
-                    "page": "gdrive_overview",
-                },
-            )
-
         scoped_folder_id = drive_services.get_optional_folder_id()
+        error = None
 
         try:
             tree, folder_count, file_count = drive_services.list_shared_tree()
@@ -46,7 +29,6 @@ class DriveOverview(View):
             request,
             "drive_overview.html",
             {
-                "drive_enabled": True,
                 "tree": tree,
                 "folder_count": folder_count,
                 "file_count": file_count,

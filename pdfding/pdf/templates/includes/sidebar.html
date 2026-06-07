@@ -76,7 +76,6 @@
               <span class="hidden md:block">Archive</span>
           </a>
       </div>
-      {% if GOOGLE_DRIVE_ENABLED %}
       <div {% if page == 'gdrive_overview' %} class="bg-slate-200 md:bg-slate-100 dark:bg-slate-800 creme:bg-creme-dark-light" {% endif %}>
           <a href="{% url 'gdrive_overview' %}">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -86,7 +85,6 @@
               <span class="hidden md:block">GDrive</span>
           </a>
       </div>
-      {% endif %}
       <div>
           <a hx-post="{% url 'docling_bulk_process' %}"
              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'

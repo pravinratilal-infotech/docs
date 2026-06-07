@@ -47,7 +47,6 @@ services:
       DEFAULT_THEME_COLOR: green
       CSRF_COOKIE_SECURE: "FALSE"
       SESSION_COOKIE_SECURE: "FALSE"
-      GOOGLE_DRIVE_ENABLED: ${GOOGLE_DRIVE_ENABLED:-TRUE}
       GOOGLE_DRIVE_KEY_FILE: /home/nonroot/secrets/google-drive-service-account.json
       GOOGLE_DRIVE_FOLDER_ID: ${GOOGLE_DRIVE_FOLDER_ID:-}
     volumes:
@@ -97,7 +96,6 @@ services:
       POSTGRES_USER: pdfding
       POSTGRES_PASSWORD: pdfding
       POSTGRES_PORT: "5432"
-      GOOGLE_DRIVE_ENABLED: ${GOOGLE_DRIVE_ENABLED:-TRUE}
       GOOGLE_DRIVE_FOLDER_ID: ${GOOGLE_DRIVE_FOLDER_ID:-}
     stdin_open: true
     tty: true
