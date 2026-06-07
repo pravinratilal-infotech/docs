@@ -209,6 +209,10 @@ CONSUME_DIR = DATA_DIR / 'consume'
 DOCLING_API_URL = environ.get('DOCLING_API_URL', 'http://docling-api:8001')
 # External URL for the Docling dashboard (used for user-facing redirects)
 DOCLING_DASHBOARD_URL = environ.get('DOCLING_DASHBOARD_URL', '/docling')
+# Queue Docling (and then auto-enrichment) when a PDF is uploaded
+DOCLING_AUTO_PROCESS_ON_UPLOAD = environ.get(
+    'DOCLING_AUTO_PROCESS_ON_UPLOAD', 'true'
+).lower() in ('true', '1', 'yes')
 
 # ── Enrichment service (AI tagging) ─────────────────────────────────────────
 ENRICHMENT_URL = environ.get('ENRICHMENT_URL', 'http://enrichment:8002')

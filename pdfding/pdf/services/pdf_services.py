@@ -10,6 +10,7 @@ from shutil import copy
 from uuid import uuid4
 
 from core.settings import MEDIA_ROOT
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
 from django.db.models import QuerySet
@@ -70,6 +71,13 @@ class PdfProcessingServices:
         workspace = pdf.collection.workspace
         for tag in tags:
             workspace.tag_set.add(tag)
+
+        if getattr(settings, 'DOCLING_AUTO_PROCESS_ON_UPLOAD', False):
+            from pdf.services import docling_services
+
+            result = docling_services.submit_pdf_for_processing(pdf)
+            if not result:
+                logger.warning("Auto Docling submit failed for PDF %s", pdf.id)
 
         return pdf
 

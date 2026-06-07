@@ -52,6 +52,8 @@
                     <span class="text-yellow-400 font-semibold">◌ Queued</span>
                     {% elif row.docling_status == 'failed' %}
                     <span class="text-red-400 font-semibold">✕ Failed</span>
+                    {% elif row.docling_status == 'not_started' %}
+                    <span class="text-slate-500 font-semibold">Not started</span>
                     {% else %}
                     <span>{{ row.docling_status }}</span>
                     {% endif %}
@@ -92,6 +94,11 @@
                     <a href="{% url 'docling_result' row.pdf_id %}"
                        class="text-primary hover:text-secondary">
                         Output →
+                    </a>
+                    {% elif row.pdf_id and row.docling_status == 'not_started' %}
+                    <a href="{% url 'pdf_details' row.pdf_id %}"
+                       class="text-primary hover:text-secondary">
+                        Process →
                     </a>
                     {% endif %}
                 </td>

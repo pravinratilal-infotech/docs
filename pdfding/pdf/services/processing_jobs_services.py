@@ -56,11 +56,13 @@ def get_workspace_processing_jobs(profile: Profile, limit: int = 100) -> tuple[l
         if job.get("source_id") in pdf_ids
     ]
 
-    source_ids = [job["source_id"] for job in workspace_jobs if job.get("source_id")]
-    pdf_names = {
-        str(pdf.id): pdf.name
-        for pdf in Pdf.objects.filter(id__in=source_ids).only("id", "name")
+    workspace_pdfs = {
+        str(pdf.id): pdf
+        for pdf in Pdf.objects.filter(id__in=pdf_ids).only(
+            "id", "name", "creation_date"
+        )
     }
+    job_source_ids = {job.get("source_id") for job in workspace_jobs if job.get("source_id")}
 
     rows: list[ProcessingJobRow] = []
     has_active = False
@@ -75,11 +77,12 @@ def get_workspace_processing_jobs(profile: Profile, limit: int = 100) -> tuple[l
             has_active = True
 
         pdf_id = job.get("source_id")
+        pdf = workspace_pdfs.get(pdf_id) if pdf_id else None
         rows.append(
             ProcessingJobRow(
                 job_id=job_id,
                 pdf_id=pdf_id,
-                pdf_name=pdf_names.get(pdf_id, "Unknown PDF") if pdf_id else "—",
+                pdf_name=pdf.name if pdf else "Unknown PDF",
                 filename=job.get("filename", "—"),
                 docling_status=docling_status,
                 docling_progress=job.get("progress") or 0,
@@ -91,5 +94,27 @@ def get_workspace_processing_jobs(profile: Profile, limit: int = 100) -> tuple[l
                 completed_at=job.get("completed_at"),
             )
         )
+
+    for pdf_id, pdf in workspace_pdfs.items():
+        if pdf_id in job_source_ids:
+            continue
+        rows.append(
+            ProcessingJobRow(
+                job_id="",
+                pdf_id=pdf_id,
+                pdf_name=pdf.name,
+                filename="—",
+                docling_status="not_started",
+                docling_progress=0,
+                docling_error=None,
+                enrichment_status=None,
+                enrichment_error=None,
+                enriched_title=None,
+                created_at=pdf.creation_date.isoformat() if pdf.creation_date else "",
+                completed_at=None,
+            )
+        )
+
+    rows.sort(key=lambda row: row.created_at or "", reverse=True)
 
     return rows, has_active, None
