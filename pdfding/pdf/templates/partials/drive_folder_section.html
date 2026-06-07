@@ -1,0 +1,41 @@
+<section class="mb-8 last:mb-0">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-2
+                border-b border-slate-300 dark:border-slate-600 creme:border-stone-400">
+        <div class="flex items-center gap-2 min-w-0">
+            <svg class="w-5 h-5 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 7C3 6.44772 3.44772 6 4 6H9.58579C9.851 6 10.1054 6.10536 10.2929 6.29289L12.7071 8.70711C12.8946 8.89464 13.149 9 13.4142 9H20C20.5523 9 21 9.44772 21 10V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h2 class="text-lg font-bold truncate text-slate-800 dark:text-slate-100 creme:text-stone-800"
+                title="{{ folder.name }}">
+                {{ folder.name }}
+            </h2>
+        </div>
+        <button type="button"
+                class="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer
+                       bg-primary text-white hover:bg-secondary transition-colors"
+                hx-post="{% url 'gdrive_import_folder' folder.id %}"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                hx-confirm="Import all PDFs in &quot;{{ folder.name }}&quot; and subfolders? Docling and AI tagging will run for each."
+                hx-swap="none">
+            Import all PDFs
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+        {% for child in folder.children %}
+            {% if not child.is_folder and child.mime_type == 'application/pdf' %}
+            {% include "partials/drive_file_card.html" with node=child folder_path=folder_path %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% for child in folder.children %}
+        {% if child.is_folder %}
+            {% if folder_path %}
+            {% include "partials/drive_folder_section.html" with folder=child folder_path=folder_path|add:"/"|add:folder.name %}
+            {% else %}
+            {% include "partials/drive_folder_section.html" with folder=child folder_path=folder.name %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+</section>

@@ -41,3 +41,8 @@ def list_shared_tree() -> tuple[list[DriveTreeNode], int, int]:
     tree = connector.list_shared_hierarchy(root_folder_id=get_optional_folder_id())
     folder_count, file_count = count_tree_items(tree)
     return tree, folder_count, file_count
+
+
+def fetch_thumbnail(file_id: str) -> tuple[bytes, str] | None:
+    connector = get_connector()
+    return connector.fetch_thumbnail(file_id)

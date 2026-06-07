@@ -3,15 +3,24 @@
 from __future__ import annotations
 
 import io
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+import requests
 from django.utils.dateparse import parse_datetime
+from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
+
+logger = logging.getLogger(__name__)
+
+_DRIVE_FILE_FIELDS = (
+    "id, name, mimeType, size, modifiedTime, webViewLink, thumbnailLink, iconLink"
+)
 
 PDF_MIME = "application/pdf"
 FOLDER_MIME = "application/vnd.google-apps.folder"
@@ -26,6 +35,7 @@ class DriveFileInfo:
     size: int | None
     modified_at: datetime | None
     web_view_link: str | None
+    thumbnail_link: str | None = None
 
 
 @dataclass
@@ -37,7 +47,10 @@ class DriveTreeNode:
     size: int | None = None
     modified_at: datetime | None = None
     web_view_link: str | None = None
+    thumbnail_link: str | None = None
     imported_pdf_id: str | None = None
+    docling_status: str | None = None
+    enrichment_status: str | None = None
     children: list[DriveTreeNode] = field(default_factory=list)
 
 
@@ -63,12 +76,45 @@ class GoogleDriveConnector:
             self._service.files()
             .get(
                 fileId=file_id,
-                fields="id, name, mimeType, size, modifiedTime, webViewLink",
+                fields=_DRIVE_FILE_FIELDS,
                 supportsAllDrives=True,
             )
             .execute()
         )
         return self._to_drive_file_info(item)
+
+    def fetch_thumbnail(self, file_id: str) -> tuple[bytes, str] | None:
+        """Download thumbnail bytes using service account credentials."""
+        item = (
+            self._service.files()
+            .get(
+                fileId=file_id,
+                fields="thumbnailLink, iconLink",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
+        url = item.get("thumbnailLink") or item.get("iconLink")
+        if not url:
+            return None
+
+        creds = self._service._http.credentials
+        if not creds.valid:
+            creds.refresh(GoogleAuthRequest())
+
+        try:
+            resp = requests.get(
+                url,
+                headers={"Authorization": f"Bearer {creds.token}"},
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                return None
+            content_type = resp.headers.get("Content-Type", "image/png")
+            return resp.content, content_type
+        except requests.RequestException as exc:
+            logger.debug("Drive thumbnail fetch failed for %s: %s", file_id, exc)
+            return None
 
     def download_file(self, file_id: str) -> tuple[bytes, DriveFileInfo]:
         """Download a Drive file. Only PDFs are supported for import."""
@@ -138,6 +184,7 @@ class GoogleDriveConnector:
                         size=root.size,
                         modified_at=root.modified_at,
                         web_view_link=root.web_view_link,
+                        thumbnail_link=root.thumbnail_link,
                     )
                 )
 
@@ -189,7 +236,7 @@ class GoogleDriveConnector:
                 self._service.files()
                 .list(
                     q=query,
-                    fields="nextPageToken, files(id, name, mimeType, size, modifiedTime, webViewLink)",
+                    fields=f"nextPageToken, files({_DRIVE_FILE_FIELDS})",
                     pageSize=100,
                     pageToken=page_token,
                     orderBy="folder,name",
@@ -231,6 +278,7 @@ class GoogleDriveConnector:
                         size=entry.size,
                         modified_at=entry.modified_at,
                         web_view_link=entry.web_view_link,
+                        thumbnail_link=entry.thumbnail_link,
                     )
                 )
 
@@ -255,6 +303,7 @@ class GoogleDriveConnector:
             size=int(size_raw) if size_raw else None,
             modified_at=modified_at,
             web_view_link=item.get("webViewLink"),
+            thumbnail_link=item.get("thumbnailLink"),
         )
 
 

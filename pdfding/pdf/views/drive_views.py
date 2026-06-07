@@ -1,7 +1,7 @@
 """Google Drive views — browse shared files and import PDFs."""
 
 from django.contrib import messages
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.views import View
 from django_htmx.http import HttpResponseClientRedirect
@@ -27,6 +27,7 @@ class DriveOverview(View):
                 request.user.profile.current_workspace
             )
             drive_import_services.annotate_imported_pdfs(tree, imported_pdfs)
+            drive_import_services.annotate_processing_status(tree)
         except DriveConnectionError as exc:
             error = str(exc)
             messages.error(request, error)
@@ -44,6 +45,22 @@ class DriveOverview(View):
                 "page": "gdrive_overview",
             },
         )
+
+
+class ServeDriveThumbnail(View):
+    """Proxy Google Drive thumbnails using the service account."""
+
+    def get(self, request: HttpRequest, file_id: str):
+        try:
+            result = drive_services.fetch_thumbnail(file_id)
+        except DriveConnectionError:
+            return HttpResponseNotFound()
+        if not result:
+            return HttpResponseNotFound()
+        data, content_type = result
+        response = HttpResponse(data, content_type=content_type)
+        response["Cache-Control"] = "private, max-age=3600"
+        return response
 
 
 class ImportDriveFile(View):

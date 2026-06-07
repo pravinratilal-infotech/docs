@@ -7,10 +7,15 @@ from dataclasses import dataclass
 from io import BytesIO
 
 from django.core.files import File
-from pdf.drive.google_drive_connector import DriveConnectionError, DriveFileInfo, PDF_MIME
+from pdf.drive.google_drive_connector import (
+    DriveConnectionError,
+    DriveFileInfo,
+    DriveTreeNode,
+    PDF_MIME,
+)
 from pdf.models.collection_models import Collection
 from pdf.models.pdf_models import Pdf
-from pdf.services import drive_services
+from pdf.services import docling_services, drive_services, enrichment_services
 from pdf.services.pdf_services import PdfProcessingServices, create_name_from_file
 from users.models import Profile
 
@@ -44,13 +49,29 @@ class DriveBulkImportResult:
     last_pdf: Pdf | None
 
 
+def _walk_tree(nodes: list[DriveTreeNode]):
+    for node in nodes:
+        yield node
+        if node.children:
+            yield from _walk_tree(node.children)
+
+
 def annotate_imported_pdfs(nodes, imported_map: dict[str, str]) -> None:
     """Mark tree nodes that already exist as imported PdfDing PDFs."""
-    for node in nodes:
+    for node in _walk_tree(nodes):
         if not node.is_folder:
             node.imported_pdf_id = imported_map.get(node.id)
-        if node.children:
-            annotate_imported_pdfs(node.children, imported_map)
+
+
+def annotate_processing_status(nodes) -> None:
+    """Attach Docling and enrichment status to imported file nodes."""
+    for node in _walk_tree(nodes):
+        if node.is_folder or not node.imported_pdf_id:
+            continue
+        job = docling_services.get_latest_job_for_pdf(node.imported_pdf_id)
+        enrichment = enrichment_services.get_enrichment_for_pdf(node.imported_pdf_id)
+        node.docling_status = job.get("status") if job else "not_started"
+        node.enrichment_status = enrichment.get("status") if enrichment else None
 
 
 def get_imported_gdrive_map(workspace) -> dict[str, str]:
