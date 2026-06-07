@@ -3,6 +3,7 @@
 from django.contrib import messages
 from django.http import HttpRequest, HttpResponse, HttpResponseNotFound
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views import View
 from django_htmx.http import HttpResponseClientRedirect
 
@@ -101,7 +102,7 @@ class ImportDriveFile(View):
 
         messages.error(request, result.message)
         if request.htmx:
-            return HttpResponseClientRedirect("/gdrive/")
+            return HttpResponseClientRedirect(reverse("gdrive_overview"))
         return redirect("gdrive_overview")
 
 
@@ -140,5 +141,5 @@ class ImportDriveFolder(View):
         if request.htmx:
             if result.imported == 1 and result.last_pdf:
                 return HttpResponseClientRedirect(f"/details/{result.last_pdf.id}")
-            return HttpResponseClientRedirect("/gdrive/")
+            return HttpResponseClientRedirect(reverse("gdrive_overview"))
         return redirect("gdrive_overview")
