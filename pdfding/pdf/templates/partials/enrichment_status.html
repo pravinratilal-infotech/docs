@@ -1,5 +1,3 @@
-{# HTMX partial — AI enrichment status for a PDF.
-   Polls until Docling completes, then shows enrichment progress/results. #}
 {% if not docling_job or docling_job.status != 'completed' %}
 <div hx-get="{% url 'enrichment_status' pdf.id %}"
      hx-trigger="every 5s"

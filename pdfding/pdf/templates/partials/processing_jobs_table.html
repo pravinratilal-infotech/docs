@@ -1,4 +1,3 @@
-{# Processing jobs table — also used as HTMX refresh partial. #}
 <div id="processing-jobs-table"
      {% if has_active %}
      hx-get="{% url 'processing_jobs_table' %}"

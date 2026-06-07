@@ -1,6 +1,3 @@
-{# HTMX partial — Docling processing status for a PDF.
-   Loaded inline on pdf_details.html via hx-get with polling.
-   Polling continues only while status is pending/processing. #}
 {% if docling_job %}
 <div class="mt-1 text-sm"
      {% if docling_job.status == 'pending' or docling_job.status == 'processing' %}
