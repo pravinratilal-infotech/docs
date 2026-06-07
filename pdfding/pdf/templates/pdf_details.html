@@ -125,6 +125,12 @@
                          hx-trigger="load"
                          hx-swap="innerHTML">
                     </div>
+                    <!-- AI enrichment status (polls after Docling completes) -->
+                    <div id="enrichment-status"
+                         hx-get="{% url 'enrichment_status' pdf.id %}"
+                         hx-trigger="load"
+                         hx-swap="innerHTML">
+                    </div>
                     <div class="pt-2">
                         <span class="text-lg font-bold">Collection</span>
                     </div>

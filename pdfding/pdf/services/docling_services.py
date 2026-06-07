@@ -101,27 +101,45 @@ def get_job_status(job_id: str) -> dict | None:
         return None
 
 
-def get_job_result(job_id: str) -> dict | None:
-    """
-    Get the processed result (markdown + JSON) for a completed job.
-
-    Returns:
-        dict with markdown, json_content, num_pages, processing_time, etc.
-        or None if fetch failed.
-    """
+def list_jobs(
+    source: str = "pdfding",
+    limit: int = 100,
+    status: str | None = None,
+) -> dict | None:
+    """List Docling jobs with optional filters."""
     try:
+        params: dict = {"source": source, "limit": limit}
+        if status:
+            params["status"] = status
         resp = requests.get(
-            f"{DOCLING_API_URL}/api/v1/jobs/{job_id}/result",
-            timeout=30,
+            f"{DOCLING_API_URL}/api/v1/jobs",
+            params=params,
+            timeout=15,
         )
         if resp.status_code == 200:
             return resp.json()
-        logger.warning(
-            "Docling API result returned %d for job %s", resp.status_code, job_id
-        )
+        logger.warning("Docling job list returned %d", resp.status_code)
         return None
     except Exception as exc:
-        logger.error("Error fetching Docling result for job %s: %s", job_id, exc)
+        logger.error("Error listing Docling jobs: %s", exc)
+        return None
+
+
+def get_latest_job_for_pdf(pdf_id: str) -> dict | None:
+    """Get the most recent Docling job for a PdfDing PDF."""
+    try:
+        resp = requests.get(
+            f"{DOCLING_API_URL}/api/v1/jobs",
+            params={"source": "pdfding", "source_id": pdf_id, "limit": 1},
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            jobs = resp.json().get("jobs", [])
+            if jobs:
+                return jobs[0]
+        return None
+    except Exception as exc:
+        logger.error("Error fetching Docling jobs for PDF %s: %s", pdf_id, exc)
         return None
 
 

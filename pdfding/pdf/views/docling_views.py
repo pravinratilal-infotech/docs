@@ -11,7 +11,7 @@ from django.views import View
 from django_htmx.http import HttpResponseClientRedirect
 
 from pdf.models.pdf_models import MarkdownHelper
-from pdf.services import docling_services
+from pdf.services import docling_services, enrichment_services
 from pdf.views.pdf_views import PdfMixin
 
 
@@ -88,15 +88,17 @@ class DoclingResult(PdfMixin, View):
 
     def get(self, request: HttpRequest, identifier: str):
         pdf = self.get_object(request, identifier)
-        job_info = _get_latest_job_for_pdf(str(pdf.id))
+        job_info = docling_services.get_latest_job_for_pdf(str(pdf.id))
 
         result_data = None
         result_html = None
 
+        enrichment = None
         if job_info and job_info.get("status") == "completed":
             result_data = docling_services.get_job_result(job_info["id"])
             if result_data and result_data.get("markdown"):
                 result_html = _render_markdown(result_data["markdown"])
+            enrichment = enrichment_services.get_enrichment_for_pdf(str(pdf.id))
 
         return render(
             request,
@@ -104,6 +106,7 @@ class DoclingResult(PdfMixin, View):
             {
                 "pdf": pdf,
                 "docling_job": job_info,
+                "enrichment": enrichment,
                 "result_data": result_data,
                 "result_html": result_html,
                 "DOCLING_DASHBOARD_URL": DOCLING_DASHBOARD_URL,
@@ -120,7 +123,7 @@ class DoclingStatus(PdfMixin, View):
             return redirect("pdf_details", identifier=identifier)
 
         pdf = self.get_object(request, identifier)
-        status_info = _get_latest_job_for_pdf(str(pdf.id))
+        status_info = docling_services.get_latest_job_for_pdf(str(pdf.id))
 
         return render(
             request,
@@ -134,27 +137,6 @@ class DoclingStatus(PdfMixin, View):
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
-
-
-def _get_latest_job_for_pdf(pdf_id: str) -> dict | None:
-    """Query the Docling API for the latest job associated with a PDF."""
-    import requests as req
-    from pdf.services.docling_services import DOCLING_API_URL
-
-    try:
-        resp = req.get(
-            f"{DOCLING_API_URL}/api/v1/jobs",
-            params={"source": "pdfding", "source_id": pdf_id, "limit": 1},
-            timeout=5,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            jobs = data.get("jobs", [])
-            if jobs:
-                return jobs[0]
-        return None
-    except Exception:
-        return None
 
 
 def _render_markdown(markdown_text: str) -> str:

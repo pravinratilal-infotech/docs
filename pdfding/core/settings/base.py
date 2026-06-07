@@ -210,6 +210,10 @@ DOCLING_API_URL = environ.get('DOCLING_API_URL', 'http://docling-api:8001')
 # External URL for the Docling dashboard (used for user-facing redirects)
 DOCLING_DASHBOARD_URL = environ.get('DOCLING_DASHBOARD_URL', '/docling')
 
+# ── Enrichment service (AI tagging) ─────────────────────────────────────────
+ENRICHMENT_URL = environ.get('ENRICHMENT_URL', 'http://enrichment:8002')
+ENRICHMENT_ENABLED = environ.get('ENRICHMENT_ENABLED', 'true').lower() in ('true', '1', 'yes')
+
 # ── Google Drive (service account → shared folders) ────────────────────────
 GOOGLE_DRIVE_KEY_FILE = environ.get(
     'GOOGLE_DRIVE_KEY_FILE',

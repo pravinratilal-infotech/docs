@@ -1,0 +1,107 @@
+{# Processing jobs table — also used as HTMX refresh partial. #}
+<div id="processing-jobs-table"
+     {% if has_active %}
+     hx-get="{% url 'processing_jobs_table' %}"
+     hx-trigger="every 5s"
+     hx-swap="outerHTML"
+     {% endif %}
+     class="rounded-md border border-slate-300 dark:border-slate-700 creme:border-creme-dark
+            bg-slate-100 dark:bg-slate-800 creme:bg-creme-dark-light overflow-x-auto">
+
+    {% if error %}
+    <p class="p-4 text-red-400">{{ error }}</p>
+
+    {% elif not rows %}
+    <p class="p-6 text-center text-slate-500 dark:text-slate-400">
+        No processing jobs yet. Use <strong>Process</strong> on a PDF to start.
+    </p>
+
+    {% else %}
+    <table class="w-full text-sm text-left">
+        <thead class="text-xs uppercase border-b border-slate-300 dark:border-slate-700 creme:border-creme-dark
+                       text-slate-500 dark:text-slate-400">
+            <tr>
+                <th class="px-4 py-3">PDF</th>
+                <th class="px-4 py-3">Docling</th>
+                <th class="px-4 py-3">AI Tags</th>
+                <th class="px-4 py-3 hidden lg:table-cell">Title</th>
+                <th class="px-4 py-3 hidden md:table-cell">Started</th>
+                <th class="px-4 py-3"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr class="border-b border-slate-200 dark:border-slate-700 creme:border-creme-dark
+                       hover:bg-slate-200/50 dark:hover:bg-slate-700/50">
+                <td class="px-4 py-3">
+                    {% if row.pdf_id %}
+                    <a href="{% url 'pdf_details' row.pdf_id %}"
+                       class="text-primary hover:text-secondary font-semibold">
+                        {{ row.pdf_name|truncatechars:40 }}
+                    </a>
+                    <div class="text-xs text-slate-500 truncate max-w-[12rem]">{{ row.filename }}</div>
+                    {% else %}
+                    <span class="text-slate-500">{{ row.filename }}</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    {% if row.docling_status == 'completed' %}
+                    <span class="text-green-500 font-semibold">✓ Done</span>
+                    {% elif row.docling_status == 'processing' %}
+                    <span class="text-blue-400 font-semibold">⟳ {{ row.docling_progress }}%</span>
+                    {% elif row.docling_status == 'pending' %}
+                    <span class="text-yellow-400 font-semibold">◌ Queued</span>
+                    {% elif row.docling_status == 'failed' %}
+                    <span class="text-red-400 font-semibold">✕ Failed</span>
+                    {% else %}
+                    <span>{{ row.docling_status }}</span>
+                    {% endif %}
+                    {% if row.docling_error %}
+                    <div class="text-xs text-red-400 truncate max-w-[10rem]" title="{{ row.docling_error }}">
+                        {{ row.docling_error|truncatechars:40 }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    {% if row.docling_status != 'completed' %}
+                    <span class="text-slate-500">—</span>
+                    {% elif row.enrichment_status == 'completed' %}
+                    <span class="text-green-500 font-semibold">✓ Done</span>
+                    {% elif row.enrichment_status == 'processing' %}
+                    <span class="text-blue-400 font-semibold">⟳ Running</span>
+                    {% elif row.enrichment_status == 'pending' %}
+                    <span class="text-yellow-400 font-semibold">◌ Queued</span>
+                    {% elif row.enrichment_status == 'failed' %}
+                    <span class="text-red-400 font-semibold">✕ Failed</span>
+                    {% else %}
+                    <span class="text-slate-500">Waiting</span>
+                    {% endif %}
+                    {% if row.enrichment_error %}
+                    <div class="text-xs text-red-400 truncate max-w-[10rem]" title="{{ row.enrichment_error }}">
+                        {{ row.enrichment_error|truncatechars:40 }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 hidden lg:table-cell text-slate-600 dark:text-slate-400 max-w-[14rem] truncate">
+                    {{ row.enriched_title|default:"—" }}
+                </td>
+                <td class="px-4 py-3 hidden md:table-cell text-slate-500 text-xs whitespace-nowrap">
+                    {{ row.created_at|slice:":16" }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-xs font-semibold">
+                    {% if row.pdf_id and row.docling_status == 'completed' %}
+                    <a href="{% url 'docling_result' row.pdf_id %}"
+                       class="text-primary hover:text-secondary">
+                        Output →
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="px-4 py-2 text-xs text-slate-500 dark:text-slate-400">
+        {{ rows|length }} job(s) in this workspace
+    </p>
+    {% endif %}
+</div>

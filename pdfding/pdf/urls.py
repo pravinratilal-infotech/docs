@@ -1,5 +1,7 @@
 import pdf.views.collection_views as collection_views
 import pdf.views.docling_views as docling_views
+import pdf.views.enrichment_views as enrichment_views
+import pdf.views.processing_jobs_views as processing_jobs_views
 import pdf.views.drive_views as drive_views
 import pdf.views.pdf_views as pdf_views
 import pdf.views.share_views as share_views
@@ -87,7 +89,13 @@ urlpatterns = [
     path('docling/bulk_process', docling_views.BulkProcessWithDocling.as_view(), name='docling_bulk_process'),
     path('docling/status/<identifier>', docling_views.DoclingStatus.as_view(), name='docling_status'),
     path('docling/result/<identifier>', docling_views.DoclingResult.as_view(), name='docling_result'),
-    path('docling/result/<identifier>', docling_views.DoclingResult.as_view(), name='docling_result'),
+    # processing jobs overview
+    path('processing/', processing_jobs_views.ProcessingJobsOverview.as_view(), name='processing_jobs'),
+    path('processing/table', processing_jobs_views.ProcessingJobsTable.as_view(), name='processing_jobs_table'),
+    # enrichment (AI tagging)
+    path('enrichment/status/<identifier>', enrichment_views.EnrichmentStatus.as_view(), name='enrichment_status'),
+    path('enrichment/enqueue/<identifier>', enrichment_views.EnqueueEnrichment.as_view(), name='enrichment_enqueue'),
+    path('enrichment/apply_tags/<identifier>', enrichment_views.ApplyEnrichmentTags.as_view(), name='enrichment_apply_tags'),
     # tag related views
     path('delete_tag/', pdf_views.DeleteTag.as_view(), name='delete_tag'),
     path('edit_tag/', pdf_views.EditTag.as_view(), name='edit_tag'),

@@ -1,0 +1,87 @@
+{# HTMX partial — AI enrichment status for a PDF.
+   Polls until Docling completes, then shows enrichment progress/results. #}
+{% if not docling_job or docling_job.status != 'completed' %}
+<div hx-get="{% url 'enrichment_status' pdf.id %}"
+     hx-trigger="every 5s"
+     hx-swap="outerHTML">
+</div>
+{% else %}
+<div class="mt-1 text-sm"
+     {% if enrichment and enrichment.status == 'pending' or enrichment and enrichment.status == 'processing' or not enrichment %}
+     hx-get="{% url 'enrichment_status' pdf.id %}"
+     hx-trigger="every 5s"
+     hx-swap="outerHTML"
+     {% endif %}>
+
+    <span class="text-slate-600 dark:text-slate-400 font-semibold">AI Tags:</span>
+
+    {% if enrichment and enrichment.status == 'completed' %}
+    <span class="text-green-500 font-semibold ml-1">✓ Ready</span>
+    {% if enrichment.processing_time %}
+    <span class="text-slate-500 dark:text-slate-400 ml-1">({{ enrichment.processing_time|floatformat:1 }}s)</span>
+    {% endif %}
+    {% if enrichment.enriched_title %}
+    <div class="text-slate-600 dark:text-slate-400 mt-0.5 text-xs">
+        <strong>Title:</strong> {{ enrichment.enriched_title|truncatechars:80 }}
+    </div>
+    {% endif %}
+    {% if enrichment.enriched_correspondent %}
+    <div class="text-slate-600 dark:text-slate-400 text-xs">
+        <strong>Broker:</strong> {{ enrichment.enriched_correspondent }}
+    </div>
+    {% endif %}
+    {% if enrichment.enriched_tags %}
+    <div class="mt-1 flex flex-wrap gap-1">
+        {% for tag in enrichment.enriched_tags %}
+        <span class="rounded-sm px-1 border border-slate-300 dark:border-slate-600 text-xs text-primary">
+            #{{ tag }}
+        </span>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold">
+        <a href="{% url 'docling_result' pdf.id %}"
+           class="text-primary hover:text-secondary">
+            View details →
+        </a>
+        {% if enrichment.enriched_tags %}
+        <a hx-post="{% url 'enrichment_apply_tags' pdf.id %}"
+           hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+           hx-confirm="Apply {{ enrichment.enriched_tags|length }} suggested tag(s) to this PDF?"
+           class="text-primary hover:text-secondary cursor-pointer">
+            Apply tags
+        </a>
+        {% endif %}
+    </div>
+
+    {% elif enrichment and enrichment.status == 'processing' %}
+    <span class="text-blue-400 font-semibold ml-1">
+        <span class="inline-block animate-spin mr-1">⟳</span>
+        Analyzing…
+    </span>
+
+    {% elif enrichment and enrichment.status == 'pending' %}
+    <span class="text-yellow-400 font-semibold ml-1">◌ Queued</span>
+
+    {% elif enrichment and enrichment.status == 'failed' %}
+    <span class="text-red-400 font-semibold ml-1">✕ Failed</span>
+    {% if enrichment.error_message %}
+    <span class="text-slate-500 dark:text-slate-400 ml-1 text-xs">— {{ enrichment.error_message|truncatechars:80 }}</span>
+    {% endif %}
+    <a hx-post="{% url 'enrichment_enqueue' pdf.id %}"
+       hx-vals='{"force": "true"}'
+       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+       class="text-primary hover:text-secondary ml-2 text-xs font-semibold cursor-pointer">
+        Retry
+    </a>
+
+    {% else %}
+    <span class="text-slate-500 dark:text-slate-400 ml-1">Waiting to start…</span>
+    <a hx-post="{% url 'enrichment_enqueue' pdf.id %}"
+       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+       class="text-primary hover:text-secondary ml-2 text-xs font-semibold cursor-pointer">
+        Run now
+    </a>
+    {% endif %}
+</div>
+{% endif %}
