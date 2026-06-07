@@ -84,6 +84,8 @@ urlpatterns = [
     path('shared/<identifier>', share_views.ViewShared.as_view(), name='view_shared_pdf'),
     # google drive
     path('gdrive/', drive_views.DriveOverview.as_view(), name='gdrive_overview'),
+    path('gdrive/import/<file_id>', drive_views.ImportDriveFile.as_view(), name='gdrive_import_file'),
+    path('gdrive/import_folder/<folder_id>', drive_views.ImportDriveFolder.as_view(), name='gdrive_import_folder'),
     # docling integration
     path('docling/process/<identifier>', docling_views.ProcessWithDocling.as_view(), name='docling_process'),
     path('docling/bulk_process', docling_views.BulkProcessWithDocling.as_view(), name='docling_bulk_process'),

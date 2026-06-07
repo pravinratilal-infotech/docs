@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +11,7 @@ from django.utils.dateparse import parse_datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload
 
 PDF_MIME = "application/pdf"
 FOLDER_MIME = "application/vnd.google-apps.folder"
@@ -35,6 +37,7 @@ class DriveTreeNode:
     size: int | None = None
     modified_at: datetime | None = None
     web_view_link: str | None = None
+    imported_pdf_id: str | None = None
     children: list[DriveTreeNode] = field(default_factory=list)
 
 
@@ -54,6 +57,48 @@ class GoogleDriveConnector:
             )
             .execute()
         )
+
+    def get_file(self, file_id: str) -> DriveFileInfo:
+        item = (
+            self._service.files()
+            .get(
+                fileId=file_id,
+                fields="id, name, mimeType, size, modifiedTime, webViewLink",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
+        return self._to_drive_file_info(item)
+
+    def download_file(self, file_id: str) -> tuple[bytes, DriveFileInfo]:
+        """Download a Drive file. Only PDFs are supported for import."""
+        info = self.get_file(file_id)
+        if info.mime_type != PDF_MIME:
+            raise DriveConnectionError(
+                f'"{info.name}" is not a PDF (type: {info.mime_type}).'
+            )
+
+        request = self._service.files().get_media(
+            fileId=file_id,
+            supportsAllDrives=True,
+        )
+        buffer = io.BytesIO()
+        downloader = MediaIoBaseDownload(buffer, request)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+
+        return buffer.getvalue(), info
+
+    def list_pdfs_in_folder(self, folder_id: str) -> list[DriveFileInfo]:
+        """Recursively list all PDF files under a folder."""
+        pdfs: list[DriveFileInfo] = []
+        for entry in self.list_folder(folder_id):
+            if entry.mime_type == FOLDER_MIME:
+                pdfs.extend(self.list_pdfs_in_folder(entry.id))
+            elif entry.mime_type == PDF_MIME:
+                pdfs.append(entry)
+        return pdfs
 
     def list_folder(self, folder_id: str, *, pdf_only: bool = False) -> list[DriveFileInfo]:
         query_parts = [f"'{folder_id}' in parents", "trashed = false"]

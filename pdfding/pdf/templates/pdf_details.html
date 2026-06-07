@@ -119,18 +119,25 @@
                            Process
                         </a>
                     </div>
-                    <!-- Docling status (inline, self-polling partial) -->
                     <div id="docling-status"
                          hx-get="{% url 'docling_status' pdf.id %}"
                          hx-trigger="load"
                          hx-swap="innerHTML">
                     </div>
-                    <!-- AI enrichment status (polls after Docling completes) -->
                     <div id="enrichment-status"
                          hx-get="{% url 'enrichment_status' pdf.id %}"
                          hx-trigger="load"
                          hx-swap="innerHTML">
                     </div>
+                    {% if pdf.external_source == 'gdrive' and pdf.external_url %}
+                    <div class="pt-2 text-sm text-slate-600 dark:text-slate-400">
+                        <span class="font-semibold">Source:</span>
+                        <a href="{{ pdf.external_url }}" target="_blank" rel="noopener"
+                           class="text-primary hover:text-secondary ml-1">
+                            Google Drive
+                        </a>
+                    </div>
+                    {% endif %}
                     <div class="pt-2">
                         <span class="text-lg font-bold">Collection</span>
                     </div>

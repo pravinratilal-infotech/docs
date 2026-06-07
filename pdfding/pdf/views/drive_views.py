@@ -1,12 +1,13 @@
-"""Google Drive view — lists shared folder hierarchy."""
+"""Google Drive views — browse shared files and import PDFs."""
 
 from django.contrib import messages
 from django.http import HttpRequest
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views import View
+from django_htmx.http import HttpResponseClientRedirect
 
 from pdf.drive.google_drive_connector import DriveConnectionError
-from pdf.services import drive_services
+from pdf.services import drive_import_services, drive_services
 
 
 class DriveOverview(View):
@@ -18,9 +19,14 @@ class DriveOverview(View):
         file_count = 0
         scoped_folder_id = drive_services.get_optional_folder_id()
         error = None
+        imported_pdfs: dict[str, str] = {}
 
         try:
             tree, folder_count, file_count = drive_services.list_shared_tree()
+            imported_pdfs = drive_import_services.get_imported_gdrive_map(
+                request.user.profile.current_workspace
+            )
+            drive_import_services.annotate_imported_pdfs(tree, imported_pdfs)
         except DriveConnectionError as exc:
             error = str(exc)
             messages.error(request, error)
@@ -33,7 +39,80 @@ class DriveOverview(View):
                 "folder_count": folder_count,
                 "file_count": file_count,
                 "scoped_folder_id": scoped_folder_id,
+                "imported_pdfs": imported_pdfs,
                 "error": error,
                 "page": "gdrive_overview",
             },
         )
+
+
+class ImportDriveFile(View):
+    """Import a single PDF from Google Drive."""
+
+    def post(self, request: HttpRequest, file_id: str):
+        folder_path = request.POST.get("folder_path", "").strip()
+        force = request.POST.get("force") == "true"
+
+        result = drive_import_services.import_gdrive_file(
+            request.user.profile,
+            file_id,
+            folder_path=folder_path,
+            force=force,
+        )
+
+        if result.status == "imported":
+            messages.success(request, result.message)
+            if request.htmx and result.pdf:
+                return HttpResponseClientRedirect(f"/details/{result.pdf.id}")
+            return redirect("pdf_details", identifier=result.pdf.id)
+
+        if result.status == "skipped":
+            messages.info(request, result.message)
+            if request.htmx and result.pdf:
+                return HttpResponseClientRedirect(f"/details/{result.pdf.id}")
+            if result.pdf:
+                return redirect("pdf_details", identifier=result.pdf.id)
+
+        messages.error(request, result.message)
+        if request.htmx:
+            return HttpResponseClientRedirect("/gdrive/")
+        return redirect("gdrive_overview")
+
+
+class ImportDriveFolder(View):
+    """Import all PDFs in a Google Drive folder."""
+
+    def post(self, request: HttpRequest, folder_id: str):
+        force = request.POST.get("force") == "true"
+        result = drive_import_services.import_gdrive_folder(
+            request.user.profile,
+            folder_id,
+            force=force,
+        )
+
+        if result.imported:
+            messages.success(
+                request,
+                f"Imported {result.imported} PDF(s) from Google Drive. "
+                "Docling processing has been queued for each.",
+            )
+        if result.skipped:
+            messages.info(
+                request,
+                f"Skipped {result.skipped} file(s) already imported and up to date.",
+            )
+        for msg in result.messages[:5]:
+            messages.warning(request, msg)
+        if len(result.messages) > 5:
+            messages.warning(
+                request,
+                f"…and {len(result.messages) - 5} more error(s).",
+            )
+        if not result.imported and not result.skipped and not result.messages:
+            messages.warning(request, "No PDFs were imported.")
+
+        if request.htmx:
+            if result.imported == 1 and result.last_pdf:
+                return HttpResponseClientRedirect(f"/details/{result.last_pdf.id}")
+            return HttpResponseClientRedirect("/gdrive/")
+        return redirect("gdrive_overview")
